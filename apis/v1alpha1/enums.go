@@ -24,32 +24,32 @@ const (
 type CalculationExecutionState string
 
 const (
-	CalculationExecutionState_CREATING  CalculationExecutionState = "CREATING"
+	CalculationExecutionState_CANCELED  CalculationExecutionState = "CANCELED"
+	CalculationExecutionState_CANCELING CalculationExecutionState = "CANCELING"
+	CalculationExecutionState_COMPLETED CalculationExecutionState = "COMPLETED"
 	CalculationExecutionState_CREATED   CalculationExecutionState = "CREATED"
+	CalculationExecutionState_CREATING  CalculationExecutionState = "CREATING"
+	CalculationExecutionState_FAILED    CalculationExecutionState = "FAILED"
 	CalculationExecutionState_QUEUED    CalculationExecutionState = "QUEUED"
 	CalculationExecutionState_RUNNING   CalculationExecutionState = "RUNNING"
-	CalculationExecutionState_CANCELING CalculationExecutionState = "CANCELING"
-	CalculationExecutionState_CANCELED  CalculationExecutionState = "CANCELED"
-	CalculationExecutionState_COMPLETED CalculationExecutionState = "COMPLETED"
-	CalculationExecutionState_FAILED    CalculationExecutionState = "FAILED"
 )
 
 type CapacityAllocationStatus string
 
 const (
+	CapacityAllocationStatus_FAILED    CapacityAllocationStatus = "FAILED"
 	CapacityAllocationStatus_PENDING   CapacityAllocationStatus = "PENDING"
 	CapacityAllocationStatus_SUCCEEDED CapacityAllocationStatus = "SUCCEEDED"
-	CapacityAllocationStatus_FAILED    CapacityAllocationStatus = "FAILED"
 )
 
 type CapacityReservationStatus string
 
 const (
-	CapacityReservationStatus_PENDING        CapacityReservationStatus = "PENDING"
 	CapacityReservationStatus_ACTIVE         CapacityReservationStatus = "ACTIVE"
-	CapacityReservationStatus_CANCELLING     CapacityReservationStatus = "CANCELLING"
 	CapacityReservationStatus_CANCELLED      CapacityReservationStatus = "CANCELLED"
+	CapacityReservationStatus_CANCELLING     CapacityReservationStatus = "CANCELLING"
 	CapacityReservationStatus_FAILED         CapacityReservationStatus = "FAILED"
+	CapacityReservationStatus_PENDING        CapacityReservationStatus = "PENDING"
 	CapacityReservationStatus_UPDATE_PENDING CapacityReservationStatus = "UPDATE_PENDING"
 )
 
@@ -64,28 +64,28 @@ const (
 type DataCatalogType string
 
 const (
-	DataCatalogType_LAMBDA DataCatalogType = "LAMBDA"
 	DataCatalogType_GLUE   DataCatalogType = "GLUE"
 	DataCatalogType_HIVE   DataCatalogType = "HIVE"
+	DataCatalogType_LAMBDA DataCatalogType = "LAMBDA"
 )
 
 type EncryptionOption string
 
 const (
-	EncryptionOption_SSE_S3  EncryptionOption = "SSE_S3"
-	EncryptionOption_SSE_KMS EncryptionOption = "SSE_KMS"
 	EncryptionOption_CSE_KMS EncryptionOption = "CSE_KMS"
+	EncryptionOption_SSE_KMS EncryptionOption = "SSE_KMS"
+	EncryptionOption_SSE_S3  EncryptionOption = "SSE_S3"
 )
 
 type ExecutorState string
 
 const (
-	ExecutorState_CREATING    ExecutorState = "CREATING"
 	ExecutorState_CREATED     ExecutorState = "CREATED"
-	ExecutorState_REGISTERED  ExecutorState = "REGISTERED"
-	ExecutorState_TERMINATING ExecutorState = "TERMINATING"
-	ExecutorState_TERMINATED  ExecutorState = "TERMINATED"
+	ExecutorState_CREATING    ExecutorState = "CREATING"
 	ExecutorState_FAILED      ExecutorState = "FAILED"
+	ExecutorState_REGISTERED  ExecutorState = "REGISTERED"
+	ExecutorState_TERMINATED  ExecutorState = "TERMINATED"
+	ExecutorState_TERMINATING ExecutorState = "TERMINATING"
 )
 
 type ExecutorType string
@@ -105,11 +105,11 @@ const (
 type QueryExecutionState string
 
 const (
+	QueryExecutionState_CANCELLED QueryExecutionState = "CANCELLED"
+	QueryExecutionState_FAILED    QueryExecutionState = "FAILED"
 	QueryExecutionState_QUEUED    QueryExecutionState = "QUEUED"
 	QueryExecutionState_RUNNING   QueryExecutionState = "RUNNING"
 	QueryExecutionState_SUCCEEDED QueryExecutionState = "SUCCEEDED"
-	QueryExecutionState_FAILED    QueryExecutionState = "FAILED"
-	QueryExecutionState_CANCELLED QueryExecutionState = "CANCELLED"
 )
 
 type S3ACLOption string
@@ -121,14 +121,14 @@ const (
 type SessionState string
 
 const (
-	SessionState_CREATING    SessionState = "CREATING"
-	SessionState_CREATED     SessionState = "CREATED"
-	SessionState_IDLE        SessionState = "IDLE"
 	SessionState_BUSY        SessionState = "BUSY"
-	SessionState_TERMINATING SessionState = "TERMINATING"
-	SessionState_TERMINATED  SessionState = "TERMINATED"
+	SessionState_CREATED     SessionState = "CREATED"
+	SessionState_CREATING    SessionState = "CREATING"
 	SessionState_DEGRADED    SessionState = "DEGRADED"
 	SessionState_FAILED      SessionState = "FAILED"
+	SessionState_IDLE        SessionState = "IDLE"
+	SessionState_TERMINATED  SessionState = "TERMINATED"
+	SessionState_TERMINATING SessionState = "TERMINATING"
 )
 
 type StatementType string
@@ -148,6 +148,6 @@ const (
 type WorkGroupState string
 
 const (
-	WorkGroupState_ENABLED  WorkGroupState = "ENABLED"
 	WorkGroupState_DISABLED WorkGroupState = "DISABLED"
+	WorkGroupState_ENABLED  WorkGroupState = "ENABLED"
 )

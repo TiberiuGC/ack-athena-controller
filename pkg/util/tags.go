@@ -21,8 +21,9 @@ import (
 	"github.com/aws-controllers-k8s/runtime/pkg/metrics"
 	ackrtlog "github.com/aws-controllers-k8s/runtime/pkg/runtime/log"
 	acktags "github.com/aws-controllers-k8s/runtime/pkg/tags"
-	svcsdk "github.com/aws/aws-sdk-go/service/athena"
-	"github.com/aws/aws-sdk-go/service/athena/athenaiface"
+	"github.com/aws/aws-sdk-go-v2/service/athena"
+	svcsdk "github.com/aws/aws-sdk-go-v2/service/athena"
+	svcsdktypes "github.com/aws/aws-sdk-go-v2/service/athena/types"
 
 	svcapitypes "github.com/aws-controllers-k8s/athena-controller/apis/v1alpha1"
 )
@@ -35,11 +36,11 @@ import (
 // GetTags retrieves the resource's associated tags.
 func GetTags(
 	ctx context.Context,
-	sdkapi athenaiface.AthenaAPI,
+	sdkapi *athena.Client,
 	metrics *metrics.Metrics,
 	resourceARN string,
 ) ([]*svcapitypes.Tag, error) {
-	resp, err := sdkapi.ListTagsForResourceWithContext(
+	resp, err := sdkapi.ListTagsForResource(
 		ctx,
 		&svcsdk.ListTagsForResourceInput{
 			ResourceARN: &resourceARN,
@@ -68,7 +69,7 @@ func SyncTags(
 	latestTags []*svcapitypes.Tag,
 	latestACKResourceMetadata *ackv1alpha1.ResourceMetadata,
 	toACKTags func(tags []*svcapitypes.Tag) acktags.Tags,
-	sdkapi athenaiface.AthenaAPI,
+	sdkapi *athena.Client,
 	metrics *metrics.Metrics,
 ) (err error) {
 	rlog := ackrtlog.FromContext(ctx)
@@ -89,16 +90,16 @@ func SyncTags(
 	}
 
 	if len(added) > 0 {
-		toAdd := make([]*svcsdk.Tag, 0, len(added))
+		toAdd := make([]svcsdktypes.Tag, 0, len(added))
 		for key, val := range added {
 			key, val := key, val
-			toAdd = append(toAdd, &svcsdk.Tag{
+			toAdd = append(toAdd, svcsdktypes.Tag{
 				Key:   &key,
 				Value: &val,
 			})
 		}
 		rlog.Debug("adding tags to work group", "tags", added)
-		_, err = sdkapi.TagResourceWithContext(
+		_, err = sdkapi.TagResource(
 			ctx,
 			&svcsdk.TagResourceInput{
 				ResourceARN: arn,
@@ -112,13 +113,13 @@ func SyncTags(
 	}
 
 	if len(removed) > 0 {
-		toRemove := make([]*string, 0, len(removed))
+		toRemove := make([]string, 0, len(removed))
 		for key := range removed {
 			key := key
-			toRemove = append(toRemove, &key)
+			toRemove = append(toRemove, key)
 		}
 		rlog.Debug("removing tags from work group", "tags", removed)
-		_, err = sdkapi.UntagResourceWithContext(
+		_, err = sdkapi.UntagResource(
 			ctx,
 			&svcsdk.UntagResourceInput{
 				ResourceARN: arn,

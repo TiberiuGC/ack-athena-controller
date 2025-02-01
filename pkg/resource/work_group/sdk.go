@@ -28,8 +28,10 @@ import (
 	ackerr "github.com/aws-controllers-k8s/runtime/pkg/errors"
 	ackrequeue "github.com/aws-controllers-k8s/runtime/pkg/requeue"
 	ackrtlog "github.com/aws-controllers-k8s/runtime/pkg/runtime/log"
-	"github.com/aws/aws-sdk-go/aws"
-	svcsdk "github.com/aws/aws-sdk-go/service/athena"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	svcsdk "github.com/aws/aws-sdk-go-v2/service/athena"
+	svcsdktypes "github.com/aws/aws-sdk-go-v2/service/athena/types"
+	smithy "github.com/aws/smithy-go"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -40,8 +42,7 @@ import (
 var (
 	_ = &metav1.Time{}
 	_ = strings.ToLower("")
-	_ = &aws.JSONValue{}
-	_ = &svcsdk.Athena{}
+	_ = &svcsdk.Client{}
 	_ = &svcapitypes.WorkGroup{}
 	_ = ackv1alpha1.AWSAccountID("")
 	_ = &ackerr.NotFound
@@ -49,6 +50,7 @@ var (
 	_ = &reflect.Value{}
 	_ = fmt.Sprintf("")
 	_ = &ackrequeue.NoRequeue{}
+	_ = &aws.Config{}
 )
 
 // sdkFind returns SDK-specific information about a supplied resource
@@ -74,13 +76,11 @@ func (rm *resourceManager) sdkFind(
 	}
 
 	var resp *svcsdk.GetWorkGroupOutput
-	resp, err = rm.sdkapi.GetWorkGroupWithContext(ctx, input)
+	resp, err = rm.sdkapi.GetWorkGroup(ctx, input)
 	rm.metrics.RecordAPICall("READ_ONE", "GetWorkGroup", err)
 	if err != nil {
-		if reqErr, ok := ackerr.AWSRequestFailure(err); ok && reqErr.StatusCode() == 404 {
-			return nil, ackerr.NotFound
-		}
-		if awsErr, ok := ackerr.AWSError(err); ok && awsErr.Code() == "InvalidRequestException" {
+		var awsErr smithy.APIError
+		if errors.As(err, &awsErr) && awsErr.ErrorCode() == "InvalidRequestException" {
 			return nil, ackerr.NotFound
 		}
 		return nil, err
@@ -139,8 +139,8 @@ func (rm *resourceManager) sdkFind(
 		}
 		if resp.WorkGroup.Configuration.QueryResultsS3AccessGrantsConfiguration != nil {
 			f0f9 := &svcapitypes.QueryResultsS3AccessGrantsConfiguration{}
-			if resp.WorkGroup.Configuration.QueryResultsS3AccessGrantsConfiguration.AuthenticationType != nil {
-				f0f9.AuthenticationType = resp.WorkGroup.Configuration.QueryResultsS3AccessGrantsConfiguration.AuthenticationType
+			if resp.WorkGroup.Configuration.QueryResultsS3AccessGrantsConfiguration.AuthenticationType != "" {
+				f0f9.AuthenticationType = aws.String(string(resp.WorkGroup.Configuration.QueryResultsS3AccessGrantsConfiguration.AuthenticationType))
 			}
 			if resp.WorkGroup.Configuration.QueryResultsS3AccessGrantsConfiguration.CreateUserLevelPrefix != nil {
 				f0f9.CreateUserLevelPrefix = resp.WorkGroup.Configuration.QueryResultsS3AccessGrantsConfiguration.CreateUserLevelPrefix
@@ -157,15 +157,15 @@ func (rm *resourceManager) sdkFind(
 			f0f11 := &svcapitypes.ResultConfiguration{}
 			if resp.WorkGroup.Configuration.ResultConfiguration.AclConfiguration != nil {
 				f0f11f0 := &svcapitypes.ACLConfiguration{}
-				if resp.WorkGroup.Configuration.ResultConfiguration.AclConfiguration.S3AclOption != nil {
-					f0f11f0.S3ACLOption = resp.WorkGroup.Configuration.ResultConfiguration.AclConfiguration.S3AclOption
+				if resp.WorkGroup.Configuration.ResultConfiguration.AclConfiguration.S3AclOption != "" {
+					f0f11f0.S3ACLOption = aws.String(string(resp.WorkGroup.Configuration.ResultConfiguration.AclConfiguration.S3AclOption))
 				}
 				f0f11.ACLConfiguration = f0f11f0
 			}
 			if resp.WorkGroup.Configuration.ResultConfiguration.EncryptionConfiguration != nil {
 				f0f11f1 := &svcapitypes.EncryptionConfiguration{}
-				if resp.WorkGroup.Configuration.ResultConfiguration.EncryptionConfiguration.EncryptionOption != nil {
-					f0f11f1.EncryptionOption = resp.WorkGroup.Configuration.ResultConfiguration.EncryptionConfiguration.EncryptionOption
+				if resp.WorkGroup.Configuration.ResultConfiguration.EncryptionConfiguration.EncryptionOption != "" {
+					f0f11f1.EncryptionOption = aws.String(string(resp.WorkGroup.Configuration.ResultConfiguration.EncryptionConfiguration.EncryptionOption))
 				}
 				if resp.WorkGroup.Configuration.ResultConfiguration.EncryptionConfiguration.KmsKey != nil {
 					f0f11f1.KMSKey = resp.WorkGroup.Configuration.ResultConfiguration.EncryptionConfiguration.KmsKey
@@ -234,7 +234,7 @@ func (rm *resourceManager) newDescribeRequestPayload(
 	res := &svcsdk.GetWorkGroupInput{}
 
 	if r.ko.Spec.Name != nil {
-		res.SetWorkGroup(*r.ko.Spec.Name)
+		res.WorkGroup = r.ko.Spec.Name
 	}
 
 	return res, nil
@@ -259,7 +259,7 @@ func (rm *resourceManager) sdkCreate(
 
 	var resp *svcsdk.CreateWorkGroupOutput
 	_ = resp
-	resp, err = rm.sdkapi.CreateWorkGroupWithContext(ctx, input)
+	resp, err = rm.sdkapi.CreateWorkGroup(ctx, input)
 	rm.metrics.RecordAPICall("CREATE", "CreateWorkGroup", err)
 	if err != nil {
 		return nil, err
@@ -281,116 +281,116 @@ func (rm *resourceManager) newCreateRequestPayload(
 	res := &svcsdk.CreateWorkGroupInput{}
 
 	if r.ko.Spec.Configuration != nil {
-		f0 := &svcsdk.WorkGroupConfiguration{}
+		f0 := &svcsdktypes.WorkGroupConfiguration{}
 		if r.ko.Spec.Configuration.AdditionalConfiguration != nil {
-			f0.SetAdditionalConfiguration(*r.ko.Spec.Configuration.AdditionalConfiguration)
+			f0.AdditionalConfiguration = r.ko.Spec.Configuration.AdditionalConfiguration
 		}
 		if r.ko.Spec.Configuration.BytesScannedCutoffPerQuery != nil {
-			f0.SetBytesScannedCutoffPerQuery(*r.ko.Spec.Configuration.BytesScannedCutoffPerQuery)
+			f0.BytesScannedCutoffPerQuery = r.ko.Spec.Configuration.BytesScannedCutoffPerQuery
 		}
 		if r.ko.Spec.Configuration.CustomerContentEncryptionConfiguration != nil {
-			f0f2 := &svcsdk.CustomerContentEncryptionConfiguration{}
+			f0f2 := &svcsdktypes.CustomerContentEncryptionConfiguration{}
 			if r.ko.Spec.Configuration.CustomerContentEncryptionConfiguration.KMSKey != nil {
-				f0f2.SetKmsKey(*r.ko.Spec.Configuration.CustomerContentEncryptionConfiguration.KMSKey)
+				f0f2.KmsKey = r.ko.Spec.Configuration.CustomerContentEncryptionConfiguration.KMSKey
 			}
-			f0.SetCustomerContentEncryptionConfiguration(f0f2)
+			f0.CustomerContentEncryptionConfiguration = f0f2
 		}
 		if r.ko.Spec.Configuration.EnableMinimumEncryptionConfiguration != nil {
-			f0.SetEnableMinimumEncryptionConfiguration(*r.ko.Spec.Configuration.EnableMinimumEncryptionConfiguration)
+			f0.EnableMinimumEncryptionConfiguration = r.ko.Spec.Configuration.EnableMinimumEncryptionConfiguration
 		}
 		if r.ko.Spec.Configuration.EnforceWorkGroupConfiguration != nil {
-			f0.SetEnforceWorkGroupConfiguration(*r.ko.Spec.Configuration.EnforceWorkGroupConfiguration)
+			f0.EnforceWorkGroupConfiguration = r.ko.Spec.Configuration.EnforceWorkGroupConfiguration
 		}
 		if r.ko.Spec.Configuration.EngineVersion != nil {
-			f0f5 := &svcsdk.EngineVersion{}
+			f0f5 := &svcsdktypes.EngineVersion{}
 			if r.ko.Spec.Configuration.EngineVersion.EffectiveEngineVersion != nil {
-				f0f5.SetEffectiveEngineVersion(*r.ko.Spec.Configuration.EngineVersion.EffectiveEngineVersion)
+				f0f5.EffectiveEngineVersion = r.ko.Spec.Configuration.EngineVersion.EffectiveEngineVersion
 			}
 			if r.ko.Spec.Configuration.EngineVersion.SelectedEngineVersion != nil {
-				f0f5.SetSelectedEngineVersion(*r.ko.Spec.Configuration.EngineVersion.SelectedEngineVersion)
+				f0f5.SelectedEngineVersion = r.ko.Spec.Configuration.EngineVersion.SelectedEngineVersion
 			}
-			f0.SetEngineVersion(f0f5)
+			f0.EngineVersion = f0f5
 		}
 		if r.ko.Spec.Configuration.ExecutionRole != nil {
-			f0.SetExecutionRole(*r.ko.Spec.Configuration.ExecutionRole)
+			f0.ExecutionRole = r.ko.Spec.Configuration.ExecutionRole
 		}
 		if r.ko.Spec.Configuration.IdentityCenterConfiguration != nil {
-			f0f7 := &svcsdk.IdentityCenterConfiguration{}
+			f0f7 := &svcsdktypes.IdentityCenterConfiguration{}
 			if r.ko.Spec.Configuration.IdentityCenterConfiguration.EnableIdentityCenter != nil {
-				f0f7.SetEnableIdentityCenter(*r.ko.Spec.Configuration.IdentityCenterConfiguration.EnableIdentityCenter)
+				f0f7.EnableIdentityCenter = r.ko.Spec.Configuration.IdentityCenterConfiguration.EnableIdentityCenter
 			}
 			if r.ko.Spec.Configuration.IdentityCenterConfiguration.IdentityCenterInstanceARN != nil {
-				f0f7.SetIdentityCenterInstanceArn(*r.ko.Spec.Configuration.IdentityCenterConfiguration.IdentityCenterInstanceARN)
+				f0f7.IdentityCenterInstanceArn = r.ko.Spec.Configuration.IdentityCenterConfiguration.IdentityCenterInstanceARN
 			}
-			f0.SetIdentityCenterConfiguration(f0f7)
+			f0.IdentityCenterConfiguration = f0f7
 		}
 		if r.ko.Spec.Configuration.PublishCloudWatchMetricsEnabled != nil {
-			f0.SetPublishCloudWatchMetricsEnabled(*r.ko.Spec.Configuration.PublishCloudWatchMetricsEnabled)
+			f0.PublishCloudWatchMetricsEnabled = r.ko.Spec.Configuration.PublishCloudWatchMetricsEnabled
 		}
 		if r.ko.Spec.Configuration.QueryResultsS3AccessGrantsConfiguration != nil {
-			f0f9 := &svcsdk.QueryResultsS3AccessGrantsConfiguration{}
+			f0f9 := &svcsdktypes.QueryResultsS3AccessGrantsConfiguration{}
 			if r.ko.Spec.Configuration.QueryResultsS3AccessGrantsConfiguration.AuthenticationType != nil {
-				f0f9.SetAuthenticationType(*r.ko.Spec.Configuration.QueryResultsS3AccessGrantsConfiguration.AuthenticationType)
+				f0f9.AuthenticationType = svcsdktypes.AuthenticationType(*r.ko.Spec.Configuration.QueryResultsS3AccessGrantsConfiguration.AuthenticationType)
 			}
 			if r.ko.Spec.Configuration.QueryResultsS3AccessGrantsConfiguration.CreateUserLevelPrefix != nil {
-				f0f9.SetCreateUserLevelPrefix(*r.ko.Spec.Configuration.QueryResultsS3AccessGrantsConfiguration.CreateUserLevelPrefix)
+				f0f9.CreateUserLevelPrefix = r.ko.Spec.Configuration.QueryResultsS3AccessGrantsConfiguration.CreateUserLevelPrefix
 			}
 			if r.ko.Spec.Configuration.QueryResultsS3AccessGrantsConfiguration.EnableS3AccessGrants != nil {
-				f0f9.SetEnableS3AccessGrants(*r.ko.Spec.Configuration.QueryResultsS3AccessGrantsConfiguration.EnableS3AccessGrants)
+				f0f9.EnableS3AccessGrants = r.ko.Spec.Configuration.QueryResultsS3AccessGrantsConfiguration.EnableS3AccessGrants
 			}
-			f0.SetQueryResultsS3AccessGrantsConfiguration(f0f9)
+			f0.QueryResultsS3AccessGrantsConfiguration = f0f9
 		}
 		if r.ko.Spec.Configuration.RequesterPaysEnabled != nil {
-			f0.SetRequesterPaysEnabled(*r.ko.Spec.Configuration.RequesterPaysEnabled)
+			f0.RequesterPaysEnabled = r.ko.Spec.Configuration.RequesterPaysEnabled
 		}
 		if r.ko.Spec.Configuration.ResultConfiguration != nil {
-			f0f11 := &svcsdk.ResultConfiguration{}
+			f0f11 := &svcsdktypes.ResultConfiguration{}
 			if r.ko.Spec.Configuration.ResultConfiguration.ACLConfiguration != nil {
-				f0f11f0 := &svcsdk.AclConfiguration{}
+				f0f11f0 := &svcsdktypes.AclConfiguration{}
 				if r.ko.Spec.Configuration.ResultConfiguration.ACLConfiguration.S3ACLOption != nil {
-					f0f11f0.SetS3AclOption(*r.ko.Spec.Configuration.ResultConfiguration.ACLConfiguration.S3ACLOption)
+					f0f11f0.S3AclOption = svcsdktypes.S3AclOption(*r.ko.Spec.Configuration.ResultConfiguration.ACLConfiguration.S3ACLOption)
 				}
-				f0f11.SetAclConfiguration(f0f11f0)
+				f0f11.AclConfiguration = f0f11f0
 			}
 			if r.ko.Spec.Configuration.ResultConfiguration.EncryptionConfiguration != nil {
-				f0f11f1 := &svcsdk.EncryptionConfiguration{}
+				f0f11f1 := &svcsdktypes.EncryptionConfiguration{}
 				if r.ko.Spec.Configuration.ResultConfiguration.EncryptionConfiguration.EncryptionOption != nil {
-					f0f11f1.SetEncryptionOption(*r.ko.Spec.Configuration.ResultConfiguration.EncryptionConfiguration.EncryptionOption)
+					f0f11f1.EncryptionOption = svcsdktypes.EncryptionOption(*r.ko.Spec.Configuration.ResultConfiguration.EncryptionConfiguration.EncryptionOption)
 				}
 				if r.ko.Spec.Configuration.ResultConfiguration.EncryptionConfiguration.KMSKey != nil {
-					f0f11f1.SetKmsKey(*r.ko.Spec.Configuration.ResultConfiguration.EncryptionConfiguration.KMSKey)
+					f0f11f1.KmsKey = r.ko.Spec.Configuration.ResultConfiguration.EncryptionConfiguration.KMSKey
 				}
-				f0f11.SetEncryptionConfiguration(f0f11f1)
+				f0f11.EncryptionConfiguration = f0f11f1
 			}
 			if r.ko.Spec.Configuration.ResultConfiguration.ExpectedBucketOwner != nil {
-				f0f11.SetExpectedBucketOwner(*r.ko.Spec.Configuration.ResultConfiguration.ExpectedBucketOwner)
+				f0f11.ExpectedBucketOwner = r.ko.Spec.Configuration.ResultConfiguration.ExpectedBucketOwner
 			}
 			if r.ko.Spec.Configuration.ResultConfiguration.OutputLocation != nil {
-				f0f11.SetOutputLocation(*r.ko.Spec.Configuration.ResultConfiguration.OutputLocation)
+				f0f11.OutputLocation = r.ko.Spec.Configuration.ResultConfiguration.OutputLocation
 			}
-			f0.SetResultConfiguration(f0f11)
+			f0.ResultConfiguration = f0f11
 		}
-		res.SetConfiguration(f0)
+		res.Configuration = f0
 	}
 	if r.ko.Spec.Description != nil {
-		res.SetDescription(*r.ko.Spec.Description)
+		res.Description = r.ko.Spec.Description
 	}
 	if r.ko.Spec.Name != nil {
-		res.SetName(*r.ko.Spec.Name)
+		res.Name = r.ko.Spec.Name
 	}
 	if r.ko.Spec.Tags != nil {
-		f3 := []*svcsdk.Tag{}
+		f3 := []svcsdktypes.Tag{}
 		for _, f3iter := range r.ko.Spec.Tags {
-			f3elem := &svcsdk.Tag{}
+			f3elem := &svcsdktypes.Tag{}
 			if f3iter.Key != nil {
-				f3elem.SetKey(*f3iter.Key)
+				f3elem.Key = f3iter.Key
 			}
 			if f3iter.Value != nil {
-				f3elem.SetValue(*f3iter.Value)
+				f3elem.Value = f3iter.Value
 			}
-			f3 = append(f3, f3elem)
+			f3 = append(f3, *f3elem)
 		}
-		res.SetTags(f3)
+		res.Tags = f3
 	}
 
 	return res, nil
@@ -428,7 +428,7 @@ func (rm *resourceManager) sdkUpdate(
 
 	var resp *svcsdk.UpdateWorkGroupOutput
 	_ = resp
-	resp, err = rm.sdkapi.UpdateWorkGroupWithContext(ctx, input)
+	resp, err = rm.sdkapi.UpdateWorkGroup(ctx, input)
 	rm.metrics.RecordAPICall("UPDATE", "UpdateWorkGroup", err)
 	if err != nil {
 		return nil, err
@@ -451,10 +451,10 @@ func (rm *resourceManager) newUpdateRequestPayload(
 	res := &svcsdk.UpdateWorkGroupInput{}
 
 	if r.ko.Spec.Description != nil {
-		res.SetDescription(*r.ko.Spec.Description)
+		res.Description = r.ko.Spec.Description
 	}
 	if r.ko.Spec.Name != nil {
-		res.SetWorkGroup(*r.ko.Spec.Name)
+		res.WorkGroup = r.ko.Spec.Name
 	}
 
 	return res, nil
@@ -476,7 +476,7 @@ func (rm *resourceManager) sdkDelete(
 	}
 	var resp *svcsdk.DeleteWorkGroupOutput
 	_ = resp
-	resp, err = rm.sdkapi.DeleteWorkGroupWithContext(ctx, input)
+	resp, err = rm.sdkapi.DeleteWorkGroup(ctx, input)
 	rm.metrics.RecordAPICall("DELETE", "DeleteWorkGroup", err)
 	return nil, err
 }
@@ -489,7 +489,7 @@ func (rm *resourceManager) newDeleteRequestPayload(
 	res := &svcsdk.DeleteWorkGroupInput{}
 
 	if r.ko.Spec.Name != nil {
-		res.SetWorkGroup(*r.ko.Spec.Name)
+		res.WorkGroup = r.ko.Spec.Name
 	}
 
 	return res, nil

@@ -28,8 +28,9 @@ import (
 	ackerr "github.com/aws-controllers-k8s/runtime/pkg/errors"
 	ackrequeue "github.com/aws-controllers-k8s/runtime/pkg/requeue"
 	ackrtlog "github.com/aws-controllers-k8s/runtime/pkg/runtime/log"
-	"github.com/aws/aws-sdk-go/aws"
-	svcsdk "github.com/aws/aws-sdk-go/service/athena"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	svcsdk "github.com/aws/aws-sdk-go-v2/service/athena"
+	smithy "github.com/aws/smithy-go"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -40,8 +41,7 @@ import (
 var (
 	_ = &metav1.Time{}
 	_ = strings.ToLower("")
-	_ = &aws.JSONValue{}
-	_ = &svcsdk.Athena{}
+	_ = &svcsdk.Client{}
 	_ = &svcapitypes.PreparedStatement{}
 	_ = ackv1alpha1.AWSAccountID("")
 	_ = &ackerr.NotFound
@@ -49,6 +49,7 @@ var (
 	_ = &reflect.Value{}
 	_ = fmt.Sprintf("")
 	_ = &ackrequeue.NoRequeue{}
+	_ = &aws.Config{}
 )
 
 // sdkFind returns SDK-specific information about a supplied resource
@@ -74,13 +75,11 @@ func (rm *resourceManager) sdkFind(
 	}
 
 	var resp *svcsdk.GetPreparedStatementOutput
-	resp, err = rm.sdkapi.GetPreparedStatementWithContext(ctx, input)
+	resp, err = rm.sdkapi.GetPreparedStatement(ctx, input)
 	rm.metrics.RecordAPICall("READ_ONE", "GetPreparedStatement", err)
 	if err != nil {
-		if reqErr, ok := ackerr.AWSRequestFailure(err); ok && reqErr.StatusCode() == 404 {
-			return nil, ackerr.NotFound
-		}
-		if awsErr, ok := ackerr.AWSError(err); ok && awsErr.Code() == "ResourceNotFoundException" {
+		var awsErr smithy.APIError
+		if errors.As(err, &awsErr) && awsErr.ErrorCode() == "ResourceNotFoundException" {
 			return nil, ackerr.NotFound
 		}
 		return nil, err
@@ -128,10 +127,10 @@ func (rm *resourceManager) newDescribeRequestPayload(
 	res := &svcsdk.GetPreparedStatementInput{}
 
 	if r.ko.Spec.Name != nil {
-		res.SetStatementName(*r.ko.Spec.Name)
+		res.StatementName = r.ko.Spec.Name
 	}
 	if r.ko.Spec.WorkGroup != nil {
-		res.SetWorkGroup(*r.ko.Spec.WorkGroup)
+		res.WorkGroup = r.ko.Spec.WorkGroup
 	}
 
 	return res, nil
@@ -156,7 +155,7 @@ func (rm *resourceManager) sdkCreate(
 
 	var resp *svcsdk.CreatePreparedStatementOutput
 	_ = resp
-	resp, err = rm.sdkapi.CreatePreparedStatementWithContext(ctx, input)
+	resp, err = rm.sdkapi.CreatePreparedStatement(ctx, input)
 	rm.metrics.RecordAPICall("CREATE", "CreatePreparedStatement", err)
 	if err != nil {
 		return nil, err
@@ -178,16 +177,16 @@ func (rm *resourceManager) newCreateRequestPayload(
 	res := &svcsdk.CreatePreparedStatementInput{}
 
 	if r.ko.Spec.Description != nil {
-		res.SetDescription(*r.ko.Spec.Description)
+		res.Description = r.ko.Spec.Description
 	}
 	if r.ko.Spec.QueryStatement != nil {
-		res.SetQueryStatement(*r.ko.Spec.QueryStatement)
+		res.QueryStatement = r.ko.Spec.QueryStatement
 	}
 	if r.ko.Spec.Name != nil {
-		res.SetStatementName(*r.ko.Spec.Name)
+		res.StatementName = r.ko.Spec.Name
 	}
 	if r.ko.Spec.WorkGroup != nil {
-		res.SetWorkGroup(*r.ko.Spec.WorkGroup)
+		res.WorkGroup = r.ko.Spec.WorkGroup
 	}
 
 	return res, nil
@@ -213,7 +212,7 @@ func (rm *resourceManager) sdkUpdate(
 
 	var resp *svcsdk.UpdatePreparedStatementOutput
 	_ = resp
-	resp, err = rm.sdkapi.UpdatePreparedStatementWithContext(ctx, input)
+	resp, err = rm.sdkapi.UpdatePreparedStatement(ctx, input)
 	rm.metrics.RecordAPICall("UPDATE", "UpdatePreparedStatement", err)
 	if err != nil {
 		return nil, err
@@ -236,16 +235,16 @@ func (rm *resourceManager) newUpdateRequestPayload(
 	res := &svcsdk.UpdatePreparedStatementInput{}
 
 	if r.ko.Spec.Description != nil {
-		res.SetDescription(*r.ko.Spec.Description)
+		res.Description = r.ko.Spec.Description
 	}
 	if r.ko.Spec.QueryStatement != nil {
-		res.SetQueryStatement(*r.ko.Spec.QueryStatement)
+		res.QueryStatement = r.ko.Spec.QueryStatement
 	}
 	if r.ko.Spec.Name != nil {
-		res.SetStatementName(*r.ko.Spec.Name)
+		res.StatementName = r.ko.Spec.Name
 	}
 	if r.ko.Spec.WorkGroup != nil {
-		res.SetWorkGroup(*r.ko.Spec.WorkGroup)
+		res.WorkGroup = r.ko.Spec.WorkGroup
 	}
 
 	return res, nil
@@ -267,7 +266,7 @@ func (rm *resourceManager) sdkDelete(
 	}
 	var resp *svcsdk.DeletePreparedStatementOutput
 	_ = resp
-	resp, err = rm.sdkapi.DeletePreparedStatementWithContext(ctx, input)
+	resp, err = rm.sdkapi.DeletePreparedStatement(ctx, input)
 	rm.metrics.RecordAPICall("DELETE", "DeletePreparedStatement", err)
 	return nil, err
 }
@@ -280,10 +279,10 @@ func (rm *resourceManager) newDeleteRequestPayload(
 	res := &svcsdk.DeletePreparedStatementInput{}
 
 	if r.ko.Spec.Name != nil {
-		res.SetStatementName(*r.ko.Spec.Name)
+		res.StatementName = r.ko.Spec.Name
 	}
 	if r.ko.Spec.WorkGroup != nil {
-		res.SetWorkGroup(*r.ko.Spec.WorkGroup)
+		res.WorkGroup = r.ko.Spec.WorkGroup
 	}
 
 	return res, nil

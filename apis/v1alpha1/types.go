@@ -29,9 +29,11 @@ var (
 )
 
 // Indicates that an Amazon S3 canned ACL should be set to control ownership
-// of stored query results. When Athena stores query results in Amazon S3, the
-// canned ACL is set with the x-amz-acl request header. For more information
-// about S3 Object Ownership, see Object Ownership settings (https://docs.aws.amazon.com/AmazonS3/latest/userguide/about-object-ownership.html#object-ownership-overview)
+// of stored query results, including data files inserted by Athena as the result
+// of statements like CTAS or INSERT INTO. When Athena stores query results
+// in Amazon S3, the canned ACL is set with the x-amz-acl request header. For
+// more information about S3 Object Ownership, see Object Ownership settings
+// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/about-object-ownership.html#object-ownership-overview)
 // in the Amazon S3 User Guide.
 type ACLConfiguration struct {
 	S3ACLOption *string `json:"s3ACLOption,omitempty"`
@@ -223,9 +225,11 @@ type QueryStagePlanNode struct {
 // client-side settings, then the query uses the workgroup settings.
 type ResultConfiguration struct {
 	// Indicates that an Amazon S3 canned ACL should be set to control ownership
-	// of stored query results. When Athena stores query results in Amazon S3, the
-	// canned ACL is set with the x-amz-acl request header. For more information
-	// about S3 Object Ownership, see Object Ownership settings (https://docs.aws.amazon.com/AmazonS3/latest/userguide/about-object-ownership.html#object-ownership-overview)
+	// of stored query results, including data files inserted by Athena as the result
+	// of statements like CTAS or INSERT INTO. When Athena stores query results
+	// in Amazon S3, the canned ACL is set with the x-amz-acl request header. For
+	// more information about S3 Object Ownership, see Object Ownership settings
+	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/about-object-ownership.html#object-ownership-overview)
 	// in the Amazon S3 User Guide.
 	ACLConfiguration *ACLConfiguration `json:"aclConfiguration,omitempty"`
 	// If query and calculation results are encrypted in Amazon S3, indicates the
@@ -239,9 +243,11 @@ type ResultConfiguration struct {
 // and encryption configuration for the query results.
 type ResultConfigurationUpdates struct {
 	// Indicates that an Amazon S3 canned ACL should be set to control ownership
-	// of stored query results. When Athena stores query results in Amazon S3, the
-	// canned ACL is set with the x-amz-acl request header. For more information
-	// about S3 Object Ownership, see Object Ownership settings (https://docs.aws.amazon.com/AmazonS3/latest/userguide/about-object-ownership.html#object-ownership-overview)
+	// of stored query results, including data files inserted by Athena as the result
+	// of statements like CTAS or INSERT INTO. When Athena stores query results
+	// in Amazon S3, the canned ACL is set with the x-amz-acl request header. For
+	// more information about S3 Object Ownership, see Object Ownership settings
+	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/about-object-ownership.html#object-ownership-overview)
 	// in the Amazon S3 User Guide.
 	ACLConfiguration *ACLConfiguration `json:"aclConfiguration,omitempty"`
 	// If query and calculation results are encrypted in Amazon S3, indicates the
